@@ -1,21 +1,24 @@
-/* 1. Primary PG headers first */
 #include "postgres.h"
 #include "fmgr.h"
 
-/* 2. Logic-specific PG headers */
+/* CRITICAL: These must be in this order for PG16 */
+#include "tsearch/ts_public.h"
+#include "tsearch/ts_utils.h"
 #include "utils/builtins.h"
 #include "access/detoast.h"
-#include "catalog/pg_type.h"  /* Adds extra type definitions */
 
-/* 3. Standard C headers MUST come after PG headers */
-#include <stdio.h>
+#include <locale.h>
 #include <string.h>
-#include <stdlib.h>
+#include <ctype.h>
 
-/* 4. Third-party headers (ICU) last */
-#include <unicode/utypes.h>
-#include <unicode/ucol.h>
-#include <unicode/ustring.h>
+/* This is a safety fallback for the compiler */
+#ifndef TSLexeme
+typedef struct TSLexeme
+{
+	char	   *lexeme;
+	struct TSLexeme *next;
+} TSLexeme;
+#endif
 
 PG_MODULE_MAGIC;
 
