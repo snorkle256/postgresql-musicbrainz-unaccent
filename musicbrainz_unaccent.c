@@ -1,15 +1,18 @@
 #include "postgres.h"
 #include "fmgr.h"
 
-/* CRITICAL: These must be in this order for PG16 */
+/* Ensure these are present to define PostgreSQL internal functions */
+#include "utils/builtins.h"
 #include "tsearch/ts_public.h"
 #include "tsearch/ts_utils.h"
-#include "utils/builtins.h"
 #include "access/detoast.h"
+#include "catalog/pg_type.h"
 
 #include <locale.h>
 #include <string.h>
-#include <ctype.h>
+
+/* Force the prototype if the header is being shy */
+extern char *lowerstr_with_len(const char *instr, int len);
 
 /* This is a safety fallback for the compiler */
 #ifndef TSLexeme
@@ -237,27 +240,59 @@ unaccent_string(char *input)
 
     input_len = strlen(input);
 
-    /* check if there are any non-ascii characters in the string */
+    /* Check if there are any non-ascii characters in the string */
     if (is_ascii(input)) {
         /* ascii string => nothing to do */
         return input;
     }
 
-    /* convert the input from the DB encoding to UTF-8 */
-    utf8_input = (char *)pg_do_encoding_conversion(
-        (unsigned char *)input, input_len,
-        GetDatabaseEncoding(), PG_UTF8);
+    /* Convert the input from the DB encoding to UTF-8 */
+    /* Cast to (char *) is mandatory for PG16 to avoid int-conversion errors */
+    utf8_input = (char *) pg_do_encoding_conversion(
+        (unsigned char *) input, 
+        input_len,
+        GetDatabaseEncoding(), 
+        PG_UTF8
+    );
+    
     utf8_input_len = strlen(utf8_input);
 
-    /* calculate the length of the unaccented character */
+    /* Calculate the length of the unaccented character */
     utf8_output_len = utf8_unac_len(utf8_input, utf8_input_len);
     if (!utf8_output_len) {
-        /* no accented character => nothing to do */
+        /* No accented character => nothing to do */
         if (utf8_input != input) {
             pfree(utf8_input);
         }
         return input;
     }
+
+    /* Allocate memory for the unaccented string */
+    utf8_output = (char *) palloc(utf8_output_len + 1);
+    if (!utf8_output) {
+        /* Out of memory? */
+        if (utf8_input != input) {
+            pfree(utf8_input);
+        }
+        return input;
+    }
+
+    /* Remove accents */
+    utf8_unac(utf8_input, utf8_input_len, utf8_output);
+    utf8_output[utf8_output_len] = '\0';
+    
+    if (utf8_input != input) {
+        pfree(utf8_input);
+    }
+
+    /* Convert the result from UTF-8 back to the DB encoding */
+    return (char *) pg_do_encoding_conversion(
+        (unsigned char *) utf8_output, 
+        utf8_output_len,
+        PG_UTF8, 
+        GetDatabaseEncoding()
+    );
+}
 
     /* allocate memory for the unaccented string */
     utf8_output = palloc(utf8_output_len + 1);
