@@ -1,33 +1,17 @@
-/* unaccent.c */
 #include "postgres.h"
 #include "fmgr.h"
+
+/* The magic PG16 duo for Varlena/VARDATA */
+#include "access/detoast.h"
 #include "utils/builtins.h"
 
-/* Standard headers */
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-
-/* Manually define Postgres 16 compatibility if headers are missing */
-#ifndef VARDATA
-#define VARDATA(PTR) VARDATA_ANY(PTR)
-#endif
-#ifndef VARSIZE
-#define VARSIZE(PTR) VARSIZE_ANY(PTR)
-#endif
-
-/* ... rest of the file ... */
-
-/* These are specific to unaccent */
+/* Required for Unaccent logic */
 #include "tsearch/ts_public.h"
 #include "tsearch/ts_locale.h"
 #include "tsearch/ts_utils.h"
-#include <stdio.h>
-#include "mb/pg_wchar.h"
-#include "tsearch/ts_public.h"
-#include "tsearch/ts_locale.h"
 
-#include "musicbrainz_unaccent_data.h"
+#include <string.h>
+#include <ctype.h>
 
 PG_MODULE_MAGIC;
 
