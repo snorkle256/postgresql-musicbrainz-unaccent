@@ -1,17 +1,21 @@
+/* 1. Primary PG headers first */
 #include "postgres.h"
 #include "fmgr.h"
 
-/* The magic PG16 duo for Varlena/VARDATA */
-#include "access/detoast.h"
+/* 2. Logic-specific PG headers */
 #include "utils/builtins.h"
+#include "access/detoast.h"
+#include "catalog/pg_type.h"  /* Adds extra type definitions */
 
-/* Required for Unaccent logic */
-#include "tsearch/ts_public.h"
-#include "tsearch/ts_locale.h"
-#include "tsearch/ts_utils.h"
-
+/* 3. Standard C headers MUST come after PG headers */
+#include <stdio.h>
 #include <string.h>
-#include <ctype.h>
+#include <stdlib.h>
+
+/* 4. Third-party headers (ICU) last */
+#include <unicode/utypes.h>
+#include <unicode/ucol.h>
+#include <unicode/ustring.h>
 
 PG_MODULE_MAGIC;
 
