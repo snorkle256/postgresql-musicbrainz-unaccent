@@ -294,56 +294,13 @@ unaccent_string(char *input)
     );
 }
 
-    /* allocate memory for the unaccented string */
-    utf8_output = palloc(utf8_output_len + 1);
-    if (!utf8_output) {
-        /* out of memory? */
-        if (utf8_input != input) {
-            pfree(utf8_input);
-        }
-        return input;
-    }
-
-    /* remove accents */
-    utf8_unac(utf8_input, utf8_input_len, utf8_output);
-    utf8_output[utf8_output_len] = '\0';
-    if (utf8_input != input) {
-        pfree(utf8_input);
-    }
-
-    /* convert the result from UTF-8 back to the DB encoding */
-    return (char *)pg_do_encoding_conversion(
-        (unsigned char *)utf8_output, utf8_output_len,
-        PG_UTF8, GetDatabaseEncoding());
-}
-
-/* PostgreSQL functions */
-
-Datum
-musicbrainz_unaccent(PG_FUNCTION_ARGS)
-{
-    char *output, *input;
-    text *result;
-
-    input = TextPGetCString(PG_GETARG_DATUM(0));
-
-    output = unaccent_string(input);
-
-    result = CStringGetTextP(output);
-    if (input != output)
-        pfree(output);
-
-    PG_RETURN_TEXT_P(result);
-}
-
 Datum
 musicbrainz_unaccent(PG_FUNCTION_ARGS)
 {
     char *input, *output;
 
-    /* Fix for PG16: Use PG_GETARG_TEXT_P then convert to CString */
-    input = text_to_cstring(PG_GETARG_TEXT_P(0));
-
+    /* text_to_cstring handles the Datum conversion for PG16 */
+    input = text_to_cstring(PG_GETARG_TEXT_PP(0));
     output = unaccent_string(input);
 
     PG_RETURN_TEXT_P(cstring_to_text(output));
@@ -352,7 +309,6 @@ musicbrainz_unaccent(PG_FUNCTION_ARGS)
 Datum
 musicbrainz_dunaccentdict_lexize(PG_FUNCTION_ARGS)
 {
-    /* C90 requires declarations at the very top of the function */
     char *input, *output, *old_locale;
     char *old_locale_ptr;
     int32 input_len;
