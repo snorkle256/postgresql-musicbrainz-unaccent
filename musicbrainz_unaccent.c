@@ -2,7 +2,21 @@
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
-#include <utils/varatt.h>
+
+/* Standard headers */
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+/* Manually define Postgres 16 compatibility if headers are missing */
+#ifndef VARDATA
+#define VARDATA(PTR) VARDATA_ANY(PTR)
+#endif
+#ifndef VARSIZE
+#define VARSIZE(PTR) VARSIZE_ANY(PTR)
+#endif
+
+/* ... rest of the file ... */
 
 /* These are specific to unaccent */
 #include "tsearch/ts_public.h"
