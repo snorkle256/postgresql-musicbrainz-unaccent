@@ -337,27 +337,35 @@ musicbrainz_unaccent(PG_FUNCTION_ARGS)
 }
 
 Datum
-musicbrainz_dunaccentdict_init(PG_FUNCTION_ARGS)
+musicbrainz_unaccent(PG_FUNCTION_ARGS)
 {
-    PG_RETURN_POINTER(NULL);
+    char *input, *output;
+
+    /* Fix for PG16: Use PG_GETARG_TEXT_P then convert to CString */
+    input = text_to_cstring(PG_GETARG_TEXT_P(0));
+
+    output = unaccent_string(input);
+
+    PG_RETURN_TEXT_P(cstring_to_text(output));
 }
 
 Datum
 musicbrainz_dunaccentdict_lexize(PG_FUNCTION_ARGS)
 {
-    char *input, *output;
-    int input_len;
+    /* C90 requires declarations at the very top of the function */
+    char *input, *output, *old_locale;
+    char *old_locale_ptr;
+    int32 input_len;
     TSLexeme *result;
 
     input = (char *) PG_GETARG_POINTER(1);
     input_len = PG_GETARG_INT32(2);
 
-    /* Handle locale switching for wide character support */
-    char *old_locale_ptr = setlocale(LC_CTYPE, NULL);
-    char *old_locale = old_locale_ptr ? strdup(old_locale_ptr) : NULL;
+    old_locale_ptr = setlocale(LC_CTYPE, NULL);
+    old_locale = old_locale_ptr ? strdup(old_locale_ptr) : NULL;
     
     setlocale(LC_CTYPE, "en_US.UTF-8");
-    input = lowerstr_with_len(input, input_len);
+    input = (char *) lowerstr_with_len(input, input_len);
     
     if (old_locale) {
         setlocale(LC_CTYPE, old_locale);
@@ -366,13 +374,11 @@ musicbrainz_dunaccentdict_lexize(PG_FUNCTION_ARGS)
 
     output = unaccent_string(input);
 
-    /* If unaccenting failed or returned nothing, return NULL */
     if (!output) {
         if (input) pfree(input);
         PG_RETURN_POINTER(NULL);
     }
 
-    /* Allocate memory for the result array (2 elements: the result + NULL terminator) */
     result = (TSLexeme *) palloc0(sizeof(TSLexeme) * 2);
     result[0].lexeme = output;
     result[1].lexeme = NULL;
