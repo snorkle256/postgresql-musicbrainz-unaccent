@@ -1,9 +1,14 @@
 /* unaccent.c */
-
-#include <stdio.h>
 #include "postgres.h"
 #include "fmgr.h"
 #include "utils/builtins.h"
+#include <utils/varatt.h>
+
+/* These are specific to unaccent */
+#include "tsearch/ts_public.h"
+#include "tsearch/ts_locale.h"
+#include "tsearch/ts_utils.h"
+#include <stdio.h>
 #include "mb/pg_wchar.h"
 #include "tsearch/ts_public.h"
 #include "tsearch/ts_locale.h"
