@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 /* IMPORTANT: This includes the mapping data for the unaccenting logic */
-#include "musicbrainz_unaccent_data.c"
+#include "src/musicbrainz_unaccent_data.c"
 
 PG_MODULE_MAGIC;
 
