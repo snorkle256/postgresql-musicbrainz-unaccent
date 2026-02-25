@@ -1,12 +1,9 @@
 #include "postgres.h"
 #include "fmgr.h"
-
-/* Ensure these are present to define PostgreSQL internal functions */
+#include "mb/pg_wchar.h"     /* Required for PG_UTF8 and pg_do_encoding_conversion */
 #include "utils/builtins.h"
 #include "tsearch/ts_public.h"
-#include "tsearch/ts_utils.h"
 #include "access/detoast.h"
-#include "catalog/pg_type.h"
 
 #include <locale.h>
 #include <string.h>
