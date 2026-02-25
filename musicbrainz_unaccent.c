@@ -1,35 +1,28 @@
 #include "postgres.h"
 #include "fmgr.h"
-#include "mb/pg_wchar.h"     /* Required for PG_UTF8 and pg_do_encoding_conversion */
+#include "mb/pg_wchar.h"
 #include "utils/builtins.h"
 #include "tsearch/ts_public.h"
+#include "tsearch/ts_utils.h"
 #include "access/detoast.h"
 
 #include <locale.h>
 #include <string.h>
+#include <stdlib.h>
 
-/* Force the prototype if the header is being shy */
-extern char *lowerstr_with_len(const char *instr, int len);
-
-/* This is a safety fallback for the compiler */
-#ifndef TSLexeme
-typedef struct TSLexeme
-{
-	char	   *lexeme;
-	struct TSLexeme *next;
-} TSLexeme;
-#endif
+/* IMPORTANT: This includes the mapping data for the unaccenting logic */
+#include "musicbrainz_unaccent_data.c"
 
 PG_MODULE_MAGIC;
 
+/* Function prototypes */
+static char *unaccent_string(char *input);
+Datum musicbrainz_unaccent(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(musicbrainz_unaccent);
-Datum       musicbrainz_unaccent(PG_FUNCTION_ARGS);
-
+Datum musicbrainz_dunaccentdict_init(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(musicbrainz_dunaccentdict_init);
-Datum       musicbrainz_dunaccentdict_init(PG_FUNCTION_ARGS);
-
+Datum musicbrainz_dunaccentdict_lexize(PG_FUNCTION_ARGS);
 PG_FUNCTION_INFO_V1(musicbrainz_dunaccentdict_lexize);
-Datum       musicbrainz_dunaccentdict_lexize(PG_FUNCTION_ARGS);
 
 #define TextPGetCString(t) DatumGetCString(DirectFunctionCall1(textout, PointerGetDatum(t)))
 #define CStringGetTextP(c) DatumGetTextP(DirectFunctionCall1(textin, CStringGetDatum(c)))
