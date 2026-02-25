@@ -281,18 +281,24 @@ unaccent_string(char *input)
     utf8_unac(utf8_input, utf8_input_len, utf8_output);
     utf8_output[utf8_output_len] = '\0';
     
-    if (utf8_input != input) {
+if (utf8_input != input) {
         pfree(utf8_input);
     }
 
-    /* Convert the result from UTF-8 back to the DB encoding */
-    return (char *) pg_do_encoding_conversion(
-        (unsigned char *) utf8_output, 
-        utf8_output_len,
-        PG_UTF8, 
-        GetDatabaseEncoding()
-    );
-}
+    /* 1. This handles the successful conversion path */
+    if (utf8_output) {
+        return (char *) pg_do_encoding_conversion(
+            (unsigned char *) utf8_output, 
+            utf8_output_len,
+            PG_UTF8, 
+            GetDatabaseEncoding()
+        );
+    }
+
+    /* 2. Safety Fallback: You MUST have a return here in case utf8_output was null, 
+       otherwise the compiler throws the "control reaches end" error. */
+    return input; 
+} /* This bracket ends unaccent_string */
 
 Datum
 musicbrainz_unaccent(PG_FUNCTION_ARGS)
@@ -302,6 +308,10 @@ musicbrainz_unaccent(PG_FUNCTION_ARGS)
     /* text_to_cstring handles the Datum conversion for PG16 */
     input = text_to_cstring(PG_GETARG_TEXT_PP(0));
     output = unaccent_string(input);
+
+    /* Safety check to ensure we don't pass a NULL to cstring_to_text */
+    if (!output)
+        PG_RETURN_NULL();
 
     PG_RETURN_TEXT_P(cstring_to_text(output));
 }
