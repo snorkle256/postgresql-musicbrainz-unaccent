@@ -1,16 +1,23 @@
 #include "postgres.h"
 #include "fmgr.h"
+
+/* Standard PG types and encoding */
+#include "catalog/pg_type.h"
 #include "mb/pg_wchar.h"
+
+/* Core utils */
 #include "utils/builtins.h"
-#include "tsearch/ts_public.h"
-#include "tsearch/ts_utils.h"
 #include "access/detoast.h"
 
+/* TSearch specific - order matters here for PG16 */
+#include "tsearch/ts_public.h"
+#include "tsearch/ts_utils.h"
+
+/* Standard C */
 #include <locale.h>
 #include <string.h>
 #include <stdlib.h>
 
-/* IMPORTANT: This includes the mapping data for the unaccenting logic */
 #include "musicbrainz_unaccent_data.h"
 
 PG_MODULE_MAGIC;
